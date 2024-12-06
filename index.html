@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="script/cookieManager.js"></script>
+    <script src="script/backend.js"></script>
+    <script>
+      async function init(){
+        const baseUrl = GetCookie('baseUrl');
+        const username = GetCookie('username');
+        const apiKey = GetCookie('apiKey');
+
+        if(baseUrl && username && apiKey &&
+            await tryConnect(`baseUrl=${baseUrl};apiKey=${apiKey};username=${username}`)
+        )
+          window.location.href = 'home.html'
+
+        document.getElementById('inputUrl').value = baseUrl ?? ""; 
+        document.getElementById('inputUsername').value = username ?? "";
+        document.getElementById('inputApiKey').value = apiKey ?? "";
+      }
+
+      async function tryConnect(connectionString){
+        if(connectionString){
+          initBackend(connectionString);
+          return await checkAuth();
+        }
+        return false;
+      }
+
+      async function submit(){
+        const baseUrl = document.getElementById('inputUrl').value;
+        const username = document.getElementById('inputUsername').value;
+        const apiKey = document.getElementById('inputApiKey').value;
+
+        let anyErrors = false;
+        if(!baseUrl){
+          console.error("Server URL input was missing");
+          anyErros = true;
+
+        }
+        if(!username){
+          console.error("Username input was missing");
+          anyErros = true;
+
+        }
+        if(!apiKey){
+          console.error("Access key input was missing");
+          anyErros = true;
+
+        }
+
+        if(anyErrors) return;
+
+        const connectionString = `baseUrl=${baseUrl};apiKey=${apiKey};username=${username}`;
+        const connectionSuccess = await tryConnect(connectionString);
+        if(!connectionSuccess){
+          console.error("Failed to connect to back end");
+          return;
+        }
+
+        SetCookie('baseUrl', baseUrl);
+        SetCookie('username', username);
+        SetCookie('apiKey', apiKey);
+
+        window.location.href = 'home.html';
+      }
+    </script>
+  </head>
+
+  <body onLoad="init()">
+    <header style="position: relative;">
+      <img style="position: absolute; right: 0px; height: 100%; opacity: 50%; z-index: -1;" src="img/cyberbullying.png">
+      <h1>Zed's Cyber Bullying Central</h1>
+      <h2>Through peer pressure, cultural education</h2>
+      <h4><i>"My name is JohnCuck and I endorse this page" - ZedZagg</i></h4>
+    </header>
+    <hr/>
+
+    <div id="mainContent">
+      <input id="inputUrl" placeholder="Server URL"></input>
+      <input id="inputApiKey" placeholder="Access Key"></input>
+      <input id="inputUsername" placeholder="Username"></input>
+      <button onclick="submit()">Connect</button>
+    </div>
+
+    <hr/>
+
+    <footer style="font-size: 9px;">
+      node.js is an abomination <br/>
+      any page that needs a package manager to run shouldn't be a goddamn webpage
+    </footer>
+  </body>
+</html>

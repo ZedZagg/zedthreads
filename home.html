@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="script/cookieManager.js"></script>
+    <script src="script/backend.js"></script>
+    <script>
+      function parseFirebaseTime(timestamp){
+        const date = new Date(timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000);
+        return date.toLocaleString();
+      }
+      function dateSort(a,b){
+        return a.time._seconds - b.time._seconds;
+      }
+
+      async function init(){
+        const baseUrl = GetCookie("baseUrl");
+        const username = GetCookie("username");
+        const apiKey = GetCookie("apiKey");
+
+        initBackend(`baseUrl=${baseUrl};username=${username};apiKey=${apiKey}`);
+        if(! await checkAuth()) 
+          window.location.href = 'index.html';
+
+        updateSidebar();
+      }
+
+      async function updateSidebar(){
+        const threadlist = document.getElementById('threadlist');
+
+        const threads = await listThreads();
+        threadlist.innerHTML = '';
+
+console.log(threads);
+        for(const t of threads){
+          const container = document.createElement('div');
+          container.classList = ['threadlist-entry'];
+          container.onclick = async () => await openThread(t.threadId);
+          threadlist.appendChild(container);
+
+          const subject = document.createElement('div');
+          subject.classList = ['subject'];
+          subject.innerText = t.subject;
+          container.appendChild(subject);
+
+          const author = document.createElement('div');
+          author.classList = ['author'];
+          author.innerText = t.author;
+          container.appendChild(author);
+        }
+      }
+
+      async function openThread(threadId){
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = 'opening thread ' + threadId;
+        const threadData = await getThread(threadId);
+        mainContent.innerHTML = '';
+
+        console.log(threadData)
+        const threadTime = parseFirebaseTime(threadData.thread.time);
+
+        const threadContainer = document.createElement('div');
+        mainContent.appendChild(threadContainer);
+        threadContainer.classList = ['thread'];
+
+        const threadHeader = document.createElement('div');
+        threadHeader.innerHTML = `<span class='subject'>${threadData.thread.subject}</span><span class='author'>${threadData.thread.author} <span class="time">${threadTime}</span></span>`;
+        threadHeader.classList = ['thread-title'];
+        threadContainer.appendChild(threadHeader);
+
+        const threadBody = document.createElement('div');
+        threadBody.classList = ['thread-body'];
+        threadContainer.appendChild(threadBody);
+
+        const opBody = document.createElement('div');
+        if(threadData.thread.resourceType == 'img'){
+          opBody.classList = ['image-post'];
+          opBody.innerHTML = `
+            <img src="${threadData.thread.resourceUri}" onclick="window.open('${threadData.thread.resourceUri}', '_blank');" />
+            ${threadData.thread.text}
+          `;
+        }
+        else{
+          opBody.innerText = threadData.thread.text;
+        }
+        threadBody.appendChild(opBody);
+
+        for(const p of threadData.posts.sort(dateSort)) {
+          const postContainer = document.createElement('div');
+          threadBody.appendChild(postContainer);
+          postContainer.classList = ['comment'];
+
+          const header = document.createElement('div');
+          header.innerHTML = `<span class='author'>${p.author} <span class="time">${parseFirebaseTime(p.time)}</span></span>`;
+          header.classList = ['comment-title'];
+          postContainer.appendChild(header);
+          
+          const body = document.createElement('div');
+          body.innerText = p.text;
+          body.classList = ['comment-body'];
+          postContainer.appendChild(body);
+        }
+
+        const textInput = document.createElement('textarea');
+        textInput.classList = ['message-input'];
+        textInput.placeholder = "Response message";
+        const br = document.createElement('br');
+        const submit = document.createElement('button');
+        submit.innerText = "Submit";
+        const anon = document.createElement('input');
+        anon.type = "checkbox";
+        const anonprompt = document.createElement('span');
+        anonprompt.innerText = "Post Anonymously";
+        threadBody.appendChild(textInput);
+        threadBody.appendChild(br);
+        threadBody.appendChild(submit);
+        threadBody.appendChild(anon);
+        threadBody.appendChild(anonprompt);
+
+        submit.onclick = async () => {
+          const result = await createComment(
+                                  threadId, 
+                                  anon.checked ? "Anonymous" : GetCookie('username'), 
+                                  textInput.value, 
+                                  null, 
+                                  null);
+
+          if(result) 
+            openThread(threadId);
+          else
+            window.alert("failed to send post");
+        }
+      }
+
+    </script>
+    <style>
+      body {
+        background: navajowhite;
+      }
+      .sidebar{
+        height: 100vh;
+        border-right: 1px solid brown;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 200px;
+        overflow-y: auto;
+        background: antiquewhite;
+
+        .sidebar-title{
+          border-bottom: 1px solid brown;
+          text-align: center;
+          margin: 0 0 6px;
+          padding: 6px;
+          background: brown;
+          color: beige;
+        }
+        .threadlist{
+          .threadlist-entry {
+            cursor: pointer;
+            padding: 4px 8px;
+          }
+
+          > .threadlist-entry:nth-child(even) {
+            background: floralwhite;
+          }
+        }
+      }
+      .mainContent {
+        padding-left: 204px;
+      }
+      .author {
+        color: green;
+        text-align: right;
+      }
+      .subject {
+        color: purple;
+      }
+      .time {
+        color: brown;
+      }
+      .thread {
+        margin: 10px;
+        background: oldlace;
+        border: 1px solid #d9aa81fc;
+        
+        .thread-title {
+          justify-content: space-between;
+          display: flex;
+          padding: 5px 10px;
+          background-color: antiquewhite;
+        }
+        .thread-body {
+          padding: 10px;
+        }
+      }
+      .comment {
+        margin: 10px;
+        border: 1px solid brown;
+        
+        .comment-title {
+          background: bisque;
+          padding: 5px 10px;
+        }
+
+        .comment-body {
+          padding: 5px 10px;
+          background: ivory;
+        }
+      }
+      .message-input {
+        width: 320px;
+        height: 130px;
+      }
+      .image-post{
+        min-height: 160px;
+
+        img {
+          width: 160px;
+          height: 160px;
+          object-fit: contain;
+          float: left;
+          cursor: pointer;
+        }
+      }
+
+    </style>
+  </head>
+
+  <body onload="init()">
+    <div class="sidebar">
+      <h3 class="sidebar-title">Threads</h3>
+      <div id="threadlist" class="threadlist">
+        Loading threads...
+      </div>
+    </div>
+
+    <div class="mainContent" id="mainContent">
+      open a thread dumbfuck
+    </div>
+  </body>
+</html>
