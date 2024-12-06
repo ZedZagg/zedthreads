@@ -17,6 +17,23 @@
         document.getElementById('inputUrl').value = baseUrl ?? ""; 
         document.getElementById('inputUsername').value = username ?? "";
         document.getElementById('inputApiKey').value = apiKey ?? "";
+
+        const jokeNames = [
+          "JohnCuck",
+          "JohnZucc",
+          "Gamer McBaggin",
+          "Lamer Gamer",
+          "Lamer McBaggin",
+          "Degen",
+          "Regen",
+          "Cormano",
+          "Cornholio",
+          "Bad Skiddy",
+          "Badder Skiddy",
+          "Toad",
+          "Professor Penis PhD",
+        ];
+        document.getElementById('quoteName').innerText = jokeNames[Math.floor(Math.random()*jokeNames.length)];
       }
 
       async function tryConnect(connectionString){
@@ -32,29 +49,29 @@
         const username = document.getElementById('inputUsername').value;
         const apiKey = document.getElementById('inputApiKey').value;
 
-        let anyErrors = false;
+        let parametersMissing = false;
         if(!baseUrl){
           console.error("Server URL input was missing");
-          anyErros = true;
-
+          parametersMissing = true;
         }
         if(!username){
           console.error("Username input was missing");
-          anyErros = true;
-
+          parametersMissing = true;
         }
         if(!apiKey){
           console.error("Access key input was missing");
-          anyErros = true;
-
+          parametersMissing = true;
         }
-
-        if(anyErrors) return;
+        if(parametersMissing) {
+          window.error("Required parameters were missing")
+          return;
+        }
 
         const connectionString = `baseUrl=${baseUrl};apiKey=${apiKey};username=${username}`;
         const connectionSuccess = await tryConnect(connectionString);
         if(!connectionSuccess){
-          console.error("Failed to connect to back end");
+          console.error("Failed to connect to server");
+          window.error("Failed to connect to server");
           return;
         }
 
@@ -72,7 +89,7 @@
       <img style="position: absolute; right: 0px; height: 100%; opacity: 50%; z-index: -1;" src="img/cyberbullying.png">
       <h1>Zed's Cyber Bullying Central</h1>
       <h2>Through peer pressure, cultural education</h2>
-      <h4><i>"My name is JohnCuck and I endorse this page" - ZedZagg</i></h4>
+      <h4><i>"My name is <span id="quoteName"/> and I endorse this page" - ZedZagg</i></h4>
     </header>
     <hr/>
 
