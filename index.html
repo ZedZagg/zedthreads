@@ -63,7 +63,7 @@
           parametersMissing = true;
         }
         if(parametersMissing) {
-          window.error("Required parameters were missing")
+          alert("Required parameters were missing")
           return;
         }
 
@@ -71,7 +71,7 @@
         const connectionSuccess = await tryConnect(connectionString);
         if(!connectionSuccess){
           console.error("Failed to connect to server");
-          window.error("Failed to connect to server");
+          alert("Failed to connect to server");
           return;
         }
 
